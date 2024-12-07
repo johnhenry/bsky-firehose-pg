@@ -11,6 +11,6 @@
     "@atproto/repo": "^0.2.0",
     "@atproto/xrpc-server": "^0.3.0",
     "get-urls": "^12.0.0",
-    "postgres": "^3.3.5"
+    "sqlite": "^4.0.23"
   }
 }

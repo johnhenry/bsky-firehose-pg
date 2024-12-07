@@ -1,4 +1,4 @@
-import postgres from 'postgres';
+import sqlite from 'sqlite';
 
 import getUrls from 'get-urls';
 
@@ -12,14 +12,14 @@ const CREATE_ACTION = 'create';
 
 const args = process.argv.slice(2);
 
-const sql = postgres({});
+const sql = sqlite.open('./bsky.db');
 
 console.info("Connected to database.")
 
 // Gracefully handle shutdown
 process.on('SIGINT', async () => {
   console.info('\nReceived SIGINT (Ctrl+C). Gracefully shutting down...');
-  await sql.end()
+  await sql.close()
   process.exit(0);
 });
 
@@ -34,17 +34,20 @@ const subscription = new Subscription({
 console.info("Started subscription.")
 
 /**
- * Inserts a record into the urls table with the specified timestamp and url.
+ * Inserts a record into the urls table with the specified timestamp, url, author, text, and createdAt.
  * 
  * @param {string} timestamp 
  * @param {string} url 
+ * @param {string} author 
+ * @param {string} text 
+ * @param {string} createdAt 
  * @returns {Promise<void>}
  */
-async function insertRecord(timestamp, url) {
+async function insertRecord(timestamp, url, author, text, createdAt) {
   try {
-    const rec = await sql`
-      INSERT INTO bsky_urls (timestamp, url) VALUES (${timestamp}, ${url})
-    `;
+    const rec = await sql.run(`
+      INSERT INTO bsky_urls (timestamp, url, author, text, createdAt) VALUES (?, ?, ?, ?, ?)
+    `, [timestamp, url, author, text, createdAt]);
     console.info(url)
   } catch (err) {
     console.error(err)
@@ -79,7 +82,7 @@ const handleEvent = async (event) => {
         const urls = getUrls(rec.text)
 
         urls.forEach((url) => {
-          insertRecord(rec.createdAt, url)
+          insertRecord(rec.createdAt, url, rec.author, rec.text, rec.createdAt)
         })
 
       }
